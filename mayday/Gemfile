@@ -1,0 +1,7 @@
+source "https://rubygems.org"
+
+gem "httparty"
+gem 'aws-sdk-iotdataplane'
+gem 'aws-sdk-iot'
+
+ruby '~> 2.7.0'

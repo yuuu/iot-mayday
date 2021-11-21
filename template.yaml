@@ -1,0 +1,59 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  iot-mayday
+
+  Sample SAM Template for iot-mayday
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 3
+
+Parameters:
+  SlackUserID:
+    Type: String
+    Description: My slack user ID.
+  IotCoreEndpoint:
+    Type: String
+    Description: My IoT Core endpoint.
+
+Resources:
+  MaydayFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: mayday/
+      Handler: app.lambda_handler
+      Runtime: ruby2.7
+      Architectures:
+        - x86_64
+      Policies:
+        - Statement:
+          - Sid: IoTPublish
+            Effect: Allow
+            Action:
+            - iot:DescribeEndpoint
+            - iot:Connect
+            - iot:Publish
+            Resource: '*'
+      Events:
+        Mayday:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /mayday
+            Method: post
+      Environment:
+        Variables:
+          SLACK_USER_ID: !Ref SlackUserID
+          IOT_CORE_ENDPOINT: !Ref IotCoreEndpoint
+
+Outputs:
+  MaydayApi:
+    Description: "API Gateway endpoint URL for Prod stage for Mayday function"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/mayday/"
+  MaydayFunction:
+    Description: "Mayday Lambda Function ARN"
+    Value: !GetAtt MaydayFunction.Arn
+  MaydayFunctionIamRole:
+    Description: "Implicit IAM Role created for Mayday function"
+    Value: !GetAtt MaydayFunctionRole.Arn
