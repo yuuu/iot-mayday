@@ -3,5 +3,6 @@ source "https://rubygems.org"
 gem "httparty"
 gem 'aws-sdk-iotdataplane'
 gem 'aws-sdk-iot'
+gem 'slack-ruby-client'
 
 ruby '~> 2.7.0'

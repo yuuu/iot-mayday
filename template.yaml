@@ -14,6 +14,9 @@ Parameters:
   SlackUserID:
     Type: String
     Description: My slack user ID.
+  SlackToken:
+    Type: String
+    Description: My slack app token.
   IotCoreEndpoint:
     Type: String
     Description: My IoT Core endpoint.
@@ -45,6 +48,7 @@ Resources:
       Environment:
         Variables:
           SLACK_USER_ID: !Ref SlackUserID
+          SLACK_TOKEN: !Ref SlackToken
           IOT_CORE_ENDPOINT: !Ref IotCoreEndpoint
 
 Outputs:

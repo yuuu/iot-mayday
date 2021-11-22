@@ -2,6 +2,11 @@
 require 'json'
 require 'aws-sdk-iot'
 require 'aws-sdk-iotdataplane'
+require 'slack-ruby-client'
+
+Slack.configure do |config|
+  config.token = ENV['SLACK_TOKEN']
+end
 
 def mantioned?(text)
   text.match?("<@#{ENV['SLACK_USER_ID']}>")
@@ -12,7 +17,9 @@ def mayday?(text)
 end
 
 def lambda_handler(event:, context:)
+
   input = JSON.parse(event['body'])
+  puts input
 
   type = input['type']
   challenge = input['challenge']
@@ -25,12 +32,13 @@ def lambda_handler(event:, context:)
   text = event['text']
   return { statusCode: 200, body: { message: 'not message.' }.to_json } if text.nil?
 
-  puts text
-
   if mantioned?(text) && mayday?(text)
-    puts 'Mayday!!!'
-    client = Aws::IoTDataPlane::Client.new(endpoint: ENV['IOT_CORE_ENDPOINT'])
-    client.publish(
+    slack_client = Slack::Web::Client.new
+    res = slack_client.users_info(user: event['user'])
+    puts res
+
+    iot_client = Aws::IoTDataPlane::Client.new(endpoint: ENV['IOT_CORE_ENDPOINT'])
+    iot_client.publish(
       topic: '/iot-mayday',
       payload: {
         message: text.gsub("<@#{ENV['SLACK_USER_ID']}>", '').strip

@@ -118,11 +118,19 @@ void setup() {
   Serial.println("begin setup.");
   M5.begin();
   M5.Power.begin();
-  Wire.begin();
+
+  // IO
+  pinMode(21, OUTPUT);
+  digitalWrite(21, 0);
+
+  // font
   String f20 = "genshin-regular-20pt";
   M5.Lcd.loadFont(f20, SD);
+
+  // network
   setup_modem();
   setup_mqtt();
+
   Serial.println("end setup.");
 }
 
@@ -133,14 +141,21 @@ void loop() {
 
   unsigned long start = millis();
 
-  if ((receivedAt + DISPLAY_INTERVAL) <= start) {
-    M5.Lcd.clear(BLACK);
-  }
   if (received) {
-    if ((receivedAt + BEEP_INTERVAL) <= start) {
+    if ((receivedAt + DISPLAY_INTERVAL) <= start) {
+      // パトランプ消灯
+      digitalWrite(21, 0);
+
+      // LCD消灯
+      M5.Lcd.clear(BLACK);
+
       received = false;
+    } else if ((receivedAt + BEEP_INTERVAL) <= start) {
       M5.Speaker.mute();
     } else {
+      // パトランプ点灯
+      digitalWrite(21, 1);
+
       beep = !beep;
       if (beep) {
         M5.Speaker.tone(1000);
