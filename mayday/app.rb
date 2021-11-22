@@ -35,12 +35,16 @@ def lambda_handler(event:, context:)
   if mantioned?(text) && mayday?(text)
     slack_client = Slack::Web::Client.new
     res = slack_client.users_info(user: event['user'])
-    puts res
+    puts res.user.name
+    puts event
 
     iot_client = Aws::IoTDataPlane::Client.new(endpoint: ENV['IOT_CORE_ENDPOINT'])
     iot_client.publish(
-      topic: '/iot-mayday',
+      topic: '/iot-mayday/call',
       payload: {
+        from: res.user.name,
+        channel: event['channel'],
+        ts: event['ts'],
         message: text.gsub("<@#{ENV['SLACK_USER_ID']}>", '').strip
       }.to_json
     )

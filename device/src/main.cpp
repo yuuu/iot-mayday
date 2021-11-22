@@ -1,6 +1,7 @@
 #include <Arduino.h>
 
 #include <M5Stack.h>
+#include <string.h>
 
 #define TINY_GSM_MODEM_UBLOX
 #include <TinyGsmClient.h> 
@@ -21,6 +22,9 @@ const char *SUB_TOPIC = "/iot-mayday";
 
 int received = false;
 unsigned long receivedAt = 0;
+char channel[64] = {0};
+char from[32] = {0};
+char ts[32] = {0};
 int beep = false;
 
 void setup_modem() {
@@ -52,16 +56,29 @@ void setup_modem() {
   M5.Lcd.fillScreen(BLACK);
 }
 
-void send_distance(uint16_t distance) {
-  char payload[512];
-  sprintf(payload, "{\"distance\":%u}", distance);
-  char topic[256];
-  sprintf(topic, "%s/%s", PUB_TOPIC, modem.getIMSI().c_str());
-  Serial.print("topic>");
-  Serial.println(topic);
-  MqttClient.publish(topic, payload);
-  Serial.println(payload);
+void send_response(int response) {
+  JSONVar json;
+  json["response"] = response;
+  json["channel"] = channel;
+  json["from"] = from;
+  json["ts"] = ts;
+
+  MqttClient.publish("/iot-mayday/response", JSON.stringify(json).c_str());
+  Serial.println(JSON.stringify(json).c_str());
   Serial.println("sent.");
+}
+
+void display_message(const char* from, const char* message) {
+  M5.Lcd.clear(BLACK);
+  M5.Lcd.setTextColor(WHITE);
+  M5.Lcd.setTextSize(2);
+  M5.Lcd.setCursor(0, 40);
+  M5.Lcd.print("@");
+  M5.Lcd.println(from);
+  M5.Lcd.setCursor(0, 80);
+  M5.Lcd.println(message);
+  M5.Lcd.setCursor(0, 200);
+  M5.Lcd.println("        OK          Later         NG        ");
 }
 
 void callback(char* topic, byte* payload, unsigned int length) {
@@ -78,11 +95,12 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
   JSONVar json = JSON.parse((char*) payload);
   if(json.hasOwnProperty("message")){
-    M5.Lcd.fillRect(0, 70, 319, 90, BLACK);
-    M5.Lcd.setTextSize(2);
-    M5.Lcd.setCursor(0, 100);
-    M5.Lcd.setTextColor(WHITE);
-    M5.Lcd.println((const char*)json["message"]);
+    display_message((const char*)json["from"], (const char*)json["message"]);
+
+    strncpy(from, json["from"], sizeof(from));
+    strncpy(channel, json["channel"], sizeof(channel));
+    strncpy(ts, json["ts"], sizeof(ts));
+
     receivedAt = millis();
     received = true;
   }
@@ -128,40 +146,56 @@ void setup() {
   M5.Lcd.loadFont(f20, SD);
 
   // network
-  setup_modem();
-  setup_mqtt();
+  //setup_modem();
+  //setup_mqtt();
 
   Serial.println("end setup.");
+}
+
+void start_mayday() {
+  // パトランプ点灯
+  digitalWrite(21, 1);
+
+  static bool beep = false;
+  beep = !beep;
+  if (beep) {
+    M5.Speaker.tone(1000);
+  } else {
+    M5.Speaker.mute();
+  }
+}
+
+void stop_beep() {
+  M5.Speaker.mute();
+}
+
+void end_mayday() {
+  // パトランプ消灯
+  digitalWrite(21, 0);
+
+  // LCD消灯
+  M5.Lcd.clear(BLACK);
+
+  received = false;
 }
 
 void loop() {
   M5.update();
 
   Serial.println("begin loop.");
+  //check_connection();
+
+  display_message("yuuu", "会話を求めます");
 
   unsigned long start = millis();
 
   if (received) {
     if ((receivedAt + DISPLAY_INTERVAL) <= start) {
-      // パトランプ消灯
-      digitalWrite(21, 0);
-
-      // LCD消灯
-      M5.Lcd.clear(BLACK);
-
-      received = false;
+      end_mayday();
     } else if ((receivedAt + BEEP_INTERVAL) <= start) {
-      M5.Speaker.mute();
+      stop_beep();
     } else {
-      // パトランプ点灯
-      digitalWrite(21, 1);
-
-      beep = !beep;
-      if (beep) {
-        M5.Speaker.tone(1000);
-      } else {
-        M5.Speaker.mute();
-      }
+      start_mayday();
     }
   }
 
