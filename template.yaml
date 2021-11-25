@@ -50,6 +50,23 @@ Resources:
           SLACK_USER_ID: !Ref SlackUserID
           SLACK_TOKEN: !Ref SlackToken
           IOT_CORE_ENDPOINT: !Ref IotCoreEndpoint
+  ResponderFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: mayday-responder/
+      Handler: app.lambda_handler
+      Runtime: ruby2.7
+      Architectures:
+        - x86_64
+      Events:
+        Response:
+          Type: IoTRule
+          Properties:
+            Sql: SELECT * FROM '/iot-mayday/response'
+      Environment:
+        Variables:
+          SLACK_USER_ID: !Ref SlackUserID
+          SLACK_TOKEN: !Ref SlackToken
 
 Outputs:
   MaydayApi:

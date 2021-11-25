@@ -14,7 +14,7 @@ TinyGsmClient ctx(modem);
 PubSubClient MqttClient(ctx);
 const char *THING_NAME = "tof";
 const char *PUB_TOPIC = "distances";
-const char *SUB_TOPIC = "/iot-mayday";
+const char *SUB_TOPIC = "/iot-mayday/call";
 
 #define LOOP_INTERNAL (50)
 #define BEEP_INTERVAL (1600)
@@ -54,18 +54,6 @@ void setup_modem() {
   M5.Lcd.print(ipaddr);
   delay(2000);
   M5.Lcd.fillScreen(BLACK);
-}
-
-void send_response(int response) {
-  JSONVar json;
-  json["response"] = response;
-  json["channel"] = channel;
-  json["from"] = from;
-  json["ts"] = ts;
-
-  MqttClient.publish("/iot-mayday/response", JSON.stringify(json).c_str());
-  Serial.println(JSON.stringify(json).c_str());
-  Serial.println("sent.");
 }
 
 void display_message(const char* from, const char* message) {
@@ -146,8 +134,8 @@ void setup() {
   M5.Lcd.loadFont(f20, SD);
 
   // network
-  //setup_modem();
-  //setup_mqtt();
+  setup_modem();
+  setup_mqtt();
 
   Serial.println("end setup.");
 }
@@ -179,13 +167,40 @@ void end_mayday() {
   received = false;
 }
 
+void send_response(const char* response) {
+  JSONVar json;
+  json["response"] = response;
+  json["channel"] = channel;
+  json["from"] = from;
+  json["ts"] = ts;
+
+  MqttClient.publish("/iot-mayday/response", JSON.stringify(json).c_str());
+  Serial.println(JSON.stringify(json).c_str());
+  Serial.println("sent.");
+}
+
+void check_button() {
+  Serial.println("check button.");
+  if (M5.BtnA.wasPressed()) {
+    Serial.println("OK");
+    send_response("OK");
+    end_mayday();
+  } else if (M5.BtnB.wasPressed()) {
+    Serial.println("Later");
+    send_response("Later");
+    end_mayday();
+  } else if (M5.BtnC.wasPressed()) {
+    Serial.println("NG");
+    send_response("NG");
+    end_mayday();
+  }
+}
+
 void loop() {
   M5.update();
 
   Serial.println("begin loop.");
-  //check_connection();
-
-  display_message("yuuu", "会話を求めます");
+  check_connection();
 
   unsigned long start = millis();
 
@@ -197,6 +212,7 @@ void loop() {
     } else {
       start_mayday();
     }
+    check_button();
   }
 
   while (millis() < (start + LOOP_INTERNAL)) {

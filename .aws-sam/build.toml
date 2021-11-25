@@ -9,4 +9,12 @@ architecture = "x86_64"
 packagetype = "Zip"
 functions = ["MaydayFunction"]
 
+[function_build_definitions.949ecd63-14e1-4ecf-8773-22e8e773db82]
+codeuri = "/Users/yokazaki/src/github.com/yuuu/iot-mayday/mayday-responder"
+runtime = "ruby2.7"
+source_md5 = ""
+architecture = "x86_64"
+packagetype = "Zip"
+functions = ["ResponderFunction"]
+
 [layer_build_definitions]
