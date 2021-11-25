@@ -23,8 +23,9 @@ const char *SUB_TOPIC = "/iot-mayday/call";
 int received = false;
 unsigned long receivedAt = 0;
 char channel[64] = {0};
-char from[32] = {0};
-char ts[32] = {0};
+char user_name[32] = {0};
+char user_id[32] = {0};
+char thread_ts[32] = {0};
 int beep = false;
 
 void setup_modem() {
@@ -56,13 +57,13 @@ void setup_modem() {
   M5.Lcd.fillScreen(BLACK);
 }
 
-void display_message(const char* from, const char* message) {
+void display_message(const char* user_name, const char* message) {
   M5.Lcd.clear(BLACK);
   M5.Lcd.setTextColor(WHITE);
   M5.Lcd.setTextSize(2);
   M5.Lcd.setCursor(0, 40);
   M5.Lcd.print("@");
-  M5.Lcd.println(from);
+  M5.Lcd.println(user_name);
   M5.Lcd.setCursor(0, 80);
   M5.Lcd.println(message);
   M5.Lcd.setCursor(0, 200);
@@ -83,11 +84,12 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
   JSONVar json = JSON.parse((char*) payload);
   if(json.hasOwnProperty("message")){
-    display_message((const char*)json["from"], (const char*)json["message"]);
+    display_message((const char*)json["user_name"], (const char*)json["message"]);
 
-    strncpy(from, json["from"], sizeof(from));
+    strncpy(user_id, json["user_id"], sizeof(user_id));
+    strncpy(user_name, json["user_name"], sizeof(user_name));
     strncpy(channel, json["channel"], sizeof(channel));
-    strncpy(ts, json["ts"], sizeof(ts));
+    strncpy(thread_ts, json["thread_ts"], sizeof(thread_ts));
 
     receivedAt = millis();
     received = true;
@@ -171,8 +173,9 @@ void send_response(const char* response) {
   JSONVar json;
   json["response"] = response;
   json["channel"] = channel;
-  json["from"] = from;
-  json["ts"] = ts;
+  json["user_name"] = user_name;
+  json["user_id"] = user_id;
+  json["thread_ts"] = thread_ts;
 
   MqttClient.publish("/iot-mayday/response", JSON.stringify(json).c_str());
   Serial.println(JSON.stringify(json).c_str());
