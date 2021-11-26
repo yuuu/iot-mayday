@@ -166,6 +166,9 @@ void end_mayday() {
   // LCD消灯
   M5.Lcd.clear(BLACK);
 
+  // 消音
+  M5.Speaker.mute();
+
   received = false;
 }
 
