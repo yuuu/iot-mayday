@@ -42,7 +42,7 @@ def lambda_handler(event:, context:)
         user_name: res.user.name,
         user_id: event['user'],
         channel: event['channel'],
-        thread_ts: event['thread_ts'],
+        thread_ts: event['thread_ts'] || event['ts'],
         message: text.gsub("<@#{ENV['SLACK_USER_ID']}>", '').strip
       }.to_json
     )

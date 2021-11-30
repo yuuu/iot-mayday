@@ -83,13 +83,20 @@ void callback(char* topic, byte* payload, unsigned int length) {
   Serial.println(buf_p);
 
   JSONVar json = JSON.parse((char*) payload);
+  Serial.println(json["user_id"]);
+  Serial.println(json["user_name"]);
+  Serial.println(json["channel"]);
+  Serial.println(json["thread_ts"]);
+
   if(json.hasOwnProperty("message")){
     display_message((const char*)json["user_name"], (const char*)json["message"]);
 
-    strncpy(user_id, json["user_id"], sizeof(user_id));
-    strncpy(user_name, json["user_name"], sizeof(user_name));
-    strncpy(channel, json["channel"], sizeof(channel));
-    strncpy(thread_ts, json["thread_ts"], sizeof(thread_ts));
+    Serial.println("start copy data");
+    strcpy(user_id, json["user_id"]);
+    strcpy(user_name, json["user_name"]);
+    strcpy(channel, json["channel"]);
+    strcpy(thread_ts, json["thread_ts"]);
+    Serial.println("end copy data");
 
     receivedAt = millis();
     received = true;
@@ -149,7 +156,7 @@ void start_mayday() {
   static bool beep = false;
   beep = !beep;
   if (beep) {
-    M5.Speaker.tone(1000);
+    // M5.Speaker.tone(1000);
   } else {
     M5.Speaker.mute();
   }
@@ -186,7 +193,7 @@ void send_response(const char* response) {
 }
 
 void check_button() {
-  Serial.println("check button.");
+  // Serial.println("check button.");
   if (M5.BtnA.wasPressed()) {
     Serial.println("OK");
     send_response("OK");
@@ -205,7 +212,7 @@ void check_button() {
 void loop() {
   M5.update();
 
-  Serial.println("begin loop.");
+  // Serial.println("begin loop.");
   check_connection();
 
   unsigned long start = millis();
@@ -225,6 +232,6 @@ void loop() {
     MqttClient.loop();
   }
 
-  Serial.println("end loop.");
-  Serial.println("");
+  // Serial.println("end loop.");
+  // Serial.println("");
 }
